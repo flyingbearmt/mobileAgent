@@ -5,33 +5,36 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AgentApi(
     private val baseUrl: String,
     private val client: OkHttpClient = OkHttpClient(),
 ) {
-    fun createTask(instruction: String, context: Map<String, Any?>): String {
-        val payload = JSONObject()
-        payload.put("instruction", instruction)
-        payload.put("context", JSONObject(context))
-        payload.put("capabilities", JSONObject())
+    suspend fun createTask(instruction: String, context: Map<String, Any?>): String =
+        withContext(Dispatchers.IO) {
+            val payload = JSONObject()
+            payload.put("instruction", instruction)
+            payload.put("context", JSONObject(context))
+            payload.put("capabilities", JSONObject())
 
-        val req = Request.Builder()
-            .url("$baseUrl/v1/tasks")
-            .post(payload.toString().toRequestBody("application/json".toMediaType()))
-            .build()
+            val req = Request.Builder()
+                .url("$baseUrl/v1/tasks")
+                .post(payload.toString().toRequestBody("application/json".toMediaType()))
+                .build()
 
-        client.newCall(req).execute().use { resp ->
-            val body = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) {
-                throw IllegalStateException("createTask failed: ${resp.code} $body")
+            client.newCall(req).execute().use { resp ->
+                val body = resp.body?.string().orEmpty()
+                if (!resp.isSuccessful) {
+                    throw IllegalStateException("createTask failed: ${resp.code} $body")
+                }
+                val json = JSONObject(body)
+                json.getString("task_id")
             }
-            val json = JSONObject(body)
-            return json.getString("task_id")
         }
-    }
 
-    fun getTask(taskId: String): TaskResponse {
+    suspend fun getTask(taskId: String): TaskResponse = withContext(Dispatchers.IO) {
         val req = Request.Builder()
             .url("$baseUrl/v1/tasks/$taskId")
             .get()
@@ -53,7 +56,7 @@ class AgentApi(
             val errorObj = json.optJSONObject("error")
             val errorMessage = errorObj?.optString("message")
 
-            return TaskResponse(
+            TaskResponse(
                 taskId = json.optString("task_id"),
                 status = status,
                 stage = stage,

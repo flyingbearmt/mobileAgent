@@ -20,7 +20,12 @@ class TaskPollWorker(
         val api = AgentApi(baseUrl)
 
         repeat(15) {
-            val resp = api.getTask(taskId)
+            val resp = runCatching { api.getTask(taskId) }.getOrElse { err ->
+                val msg = err.message ?: "poll failed"
+                saveResult(taskId, msg)
+                TaskNotification.notifyFailed(applicationContext, taskId, msg)
+                return Result.success()
+            }
             if (resp.status == "SUCCEEDED") {
                 saveResult(taskId, resp.resultText.orEmpty())
                 TaskNotification.notifyDone(applicationContext, taskId, resp.resultText.orEmpty())
@@ -35,7 +40,10 @@ class TaskPollWorker(
             delay(2000)
         }
 
-        return Result.retry()
+        val msg = "timeout"
+        saveResult(taskId, msg)
+        TaskNotification.notifyFailed(applicationContext, taskId, msg)
+        return Result.success()
     }
 
     private fun saveResult(taskId: String, text: String) {

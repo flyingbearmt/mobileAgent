@@ -7,6 +7,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -34,7 +35,22 @@ fun BottomSheetConfirm(
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text(text = "Suggested: ${suggestion.name}", style = MaterialTheme.typography.titleMedium)
-            Text(text = instruction.value, modifier = Modifier.padding(top = 12.dp))
+
+            if (!sharedText.isNullOrBlank()) {
+                Text(
+                    text = sharedText,
+                    modifier = Modifier.padding(top = 12.dp),
+                    maxLines = 4,
+                )
+            }
+
+            OutlinedTextField(
+                value = instruction.value,
+                onValueChange = { instruction.value = it },
+                label = { Text(text = "Instruction") },
+                modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
+                minLines = 2,
+            )
 
             Button(
                 onClick = { onConfirm(instruction.value) },

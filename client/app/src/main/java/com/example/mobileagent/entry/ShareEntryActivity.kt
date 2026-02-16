@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,7 +18,6 @@ import androidx.work.WorkManager
 import com.example.mobileagent.AppConfig
 import com.example.mobileagent.context.ContextCollector
 import com.example.mobileagent.intent.IntentRuleEngine
-import com.example.mobileagent.intent.IntentType
 import com.example.mobileagent.agent.AgentApi
 import com.example.mobileagent.task.TaskPollWorker
 import com.example.mobileagent.ui.theme.MobileAgentTheme
@@ -43,16 +43,25 @@ class ShareEntryActivity : ComponentActivity() {
                     onCancel = { finish() },
                     onConfirm = { instruction ->
                         lifecycleScope.launch {
-                            val ctx = ContextCollector.collect(
-                                context = this@ShareEntryActivity,
-                                sourceApp = sourceApp,
-                                sharedText = sharedText,
-                            )
+                            runCatching {
+                                val ctx = ContextCollector.collect(
+                                    context = this@ShareEntryActivity,
+                                    sourceApp = sourceApp,
+                                    sharedText = sharedText,
+                                )
 
-                            val taskId = AgentApi(AppConfig.GATEWAY_BASE_URL)
-                                .createTask(instruction = instruction, context = ctx)
+                                val taskId = AgentApi(AppConfig.GATEWAY_BASE_URL)
+                                    .createTask(instruction = instruction, context = ctx)
 
-                            enqueuePoll(taskId)
+                                enqueuePoll(taskId)
+                            }.onFailure { err ->
+                                Toast.makeText(
+                                    this@ShareEntryActivity,
+                                    "Failed to create task: ${err.message}",
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            }
+
                             finish()
                         }
                     },
