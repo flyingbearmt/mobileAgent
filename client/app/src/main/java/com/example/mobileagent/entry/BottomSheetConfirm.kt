@@ -12,6 +12,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -28,6 +29,13 @@ fun BottomSheetConfirm(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val instruction = remember { mutableStateOf(defaultInstruction(suggestion, sharedText)) }
+    val dirty = remember { mutableStateOf(false) }
+
+    LaunchedEffect(sharedText, suggestion) {
+        if (!dirty.value) {
+            instruction.value = defaultInstruction(suggestion, sharedText)
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onCancel,
@@ -46,7 +54,10 @@ fun BottomSheetConfirm(
 
             OutlinedTextField(
                 value = instruction.value,
-                onValueChange = { instruction.value = it },
+                onValueChange = {
+                    dirty.value = true
+                    instruction.value = it
+                },
                 label = { Text(text = "Instruction") },
                 modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
                 minLines = 2,

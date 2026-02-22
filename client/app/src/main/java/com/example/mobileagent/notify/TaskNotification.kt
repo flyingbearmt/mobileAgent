@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.example.mobileagent.R
+import com.example.mobileagent.result.StructuredResultParser
 import com.example.mobileagent.ui.ResultViewerActivity
 
 object TaskNotification {
@@ -16,6 +17,8 @@ object TaskNotification {
 
     fun notifyDone(context: Context, taskId: String, resultText: String) {
         ensureChannel(context)
+
+        val previewText = StructuredResultParser.extractPreviewText(resultText)
 
         val intent = Intent(context, ResultViewerActivity::class.java)
             .putExtra(ResultViewerActivity.EXTRA_TASK_ID, taskId)
@@ -31,8 +34,8 @@ object TaskNotification {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Task completed")
-            .setContentText(resultText.take(80))
-            .setStyle(NotificationCompat.BigTextStyle().bigText(resultText))
+            .setContentText(previewText.take(80))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(previewText))
             .setContentIntent(pending)
             .setAutoCancel(true)
             .build()

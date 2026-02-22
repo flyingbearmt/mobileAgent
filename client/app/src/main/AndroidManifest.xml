@@ -44,6 +44,22 @@
             android:name=".ui.ResultViewerActivity"
             android:exported="false"
             android:theme="@style/Theme.MobileAgent" />
+
+        <activity
+            android:name=".entry.ClipboardEntryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MobileAgent" />
+
+        <service
+            android:name=".entry.ClipboardTileService"
+            android:exported="true"
+            android:label="Clipboard"
+            android:icon="@mipmap/ic_launcher"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>
