@@ -1,6 +1,8 @@
 package com.example.mobileagent.intent
 
 import android.content.Context
+import android.util.Log
+import com.example.mobileagent.BuildConfig
 import com.example.mobileagent.agent.SkillInfo
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.text.textembedder.TextEmbedder
@@ -61,9 +63,14 @@ class OnDeviceSkillRouter(
             localEmbedder.embed(query).embeddingResult().embeddings().first()
         }.getOrNull() ?: return@withContext null
 
+        if (BuildConfig.DEBUG) {
+            logEmbedding("query", queryEmbedding)
+        }
+
         var bestName: String? = null
         var bestScore = Double.NEGATIVE_INFINITY
         var secondScore = Double.NEGATIVE_INFINITY
+        var bestEmbedding: com.google.mediapipe.tasks.components.containers.Embedding? = null
 
         for (s in skills) {
             val routingText = s.routingText?.takeIf { it.isNotBlank() } ?: continue
@@ -79,6 +86,7 @@ class OnDeviceSkillRouter(
                 secondScore = bestScore
                 bestScore = score
                 bestName = s.name
+                bestEmbedding = skillEmbedding
             } else if (score > secondScore) {
                 secondScore = score
             }
@@ -88,6 +96,13 @@ class OnDeviceSkillRouter(
         if (bestName == null) return@withContext null
         if (bestScore < MIN_SCORE) return@withContext null
         if (margin < MIN_MARGIN) return@withContext null
+
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "routeSkill best=$bestName score=$bestScore margin=$margin skills=${skills.size}")
+            if (bestEmbedding != null) {
+                logEmbedding("best:$bestName", bestEmbedding!!)
+            }
+        }
 
         RouteResult(skillName = bestName, score = bestScore, margin = margin)
     }
@@ -138,10 +153,46 @@ class OnDeviceSkillRouter(
         return text.take(head) + "\n...\n" + text.takeLast(tail)
     }
 
+    private fun logEmbedding(label: String, embedding: com.google.mediapipe.tasks.components.containers.Embedding) {
+        if (!BuildConfig.DEBUG) return
+
+        val floats = embedding.floatEmbedding()
+        if (floats.isNotEmpty()) {
+            var min = Float.POSITIVE_INFINITY
+            var max = Float.NEGATIVE_INFINITY
+            var sumSq = 0.0
+            val sample = FloatArray(minOf(EMBEDDING_SAMPLE_SIZE, floats.size))
+            for (i in floats.indices) {
+                val v = floats[i]
+                if (v < min) min = v
+                if (v > max) max = v
+                sumSq += (v * v).toDouble()
+                if (i < sample.size) sample[i] = v
+            }
+            val norm = kotlin.math.sqrt(sumSq)
+            Log.d(
+                TAG,
+                "embedding[$label] headIndex=${embedding.headIndex()} dim=${floats.size} norm=$norm min=$min max=$max sample=${sample.joinToString(prefix = "[", postfix = "]")}",
+            )
+            return
+        }
+
+        val q = embedding.quantizedEmbedding()
+        if (q.isNotEmpty()) {
+            val sampleBytes = q.take(EMBEDDING_SAMPLE_SIZE).joinToString(prefix = "[", postfix = "]") { it.toString() }
+            Log.d(
+                TAG,
+                "embedding[$label] headIndex=${embedding.headIndex()} quantizedBytes=${q.size} sample=$sampleBytes",
+            )
+        }
+    }
+
     companion object {
+        private const val TAG = "OnDeviceSkillRouter"
         const val MODEL_ASSET_PATH = "universal_sentence_encoder_qa_ondevice.tflite"
         private const val SHARED_TEXT_MAX_CHARS = 1800
         private const val ROUTING_TEXT_MAX_CHARS = 1200
+        private const val EMBEDDING_SAMPLE_SIZE = 8
         private const val MIN_SCORE = 0.25
         private const val MIN_MARGIN = 0.05
 
