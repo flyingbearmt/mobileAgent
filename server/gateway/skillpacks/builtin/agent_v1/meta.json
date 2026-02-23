@@ -1,5 +1,13 @@
 {
   "name": "agent_v1",
   "source": "builtin",
-  "editable": false
+  "editable": false,
+  "routing": {
+    "description": "Answer questions or follow instructions using the shared text as context.",
+    "examples": [
+      "Answer this question",
+      "Help me reply",
+      "Explain what this means"
+    ]
+  }
 }

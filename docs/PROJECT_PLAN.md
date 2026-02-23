@@ -15,7 +15,7 @@ status: active
 的可行性。重点是用户体验与工程闭环，而不是模型能力。
 
 ## 核心原则
-- Android：入口 + 上下文采集 + 轻量意图分类 + 状态展示/通知，不承担复杂推理
+- Android：入口 + 上下文采集 + 轻量意图分类/路由（端上 embedding） + 状态展示/通知，不承担复杂推理
 - Gateway/Agent：编排、工具执行、状态管理
 - 两端通过 Task ID + 异步通信解耦（先 REST + 轮询）
 
@@ -97,6 +97,10 @@ Response: 同上
 - 验收：
   - 确认 UI 中能展示“建议动作”
   - Context JSON 打印/上报一致
+
+## Milestone 2.1：端上 embedding 动态 Skill 路由（可选 / Practical v1+）
+- 目标：端上用 USE-lite embedding 基于 `/v1/skills` 的 `routing_text` 动态选择 `capabilities.skill`；不确定时回退到 IntentRuleEngine。
+- 说明：skills 增删改无需发版；复杂推理仍交给 Gateway。
 
 ## Milestone 3：任务下发（REST）+ WorkManager 轮询（Week 1）
 - AgentApi：

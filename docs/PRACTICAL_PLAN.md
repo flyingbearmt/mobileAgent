@@ -152,6 +152,22 @@ Gateway 在 TaskResponse 的 result 中返回：
 ### 验收
 - 相同 sharedText 下，不同 suggestion 会触发不同 skill prompt（结果更稳定、更符合预期）。
 
+## Milestone P3.2：端上 USE-lite embedding 动态 Skill 路由（1d）
+目标：端上用轻量 embedding 模型做“动态 skills 路由”，skills 列表变化时无需发版；复杂生成仍交给 Gateway。
+
+### Steps
+1. Gateway：/v1/skills 返回每个 skill 的 `routing_text`（来自 skillpack meta 的 description/examples）。
+2. Android：内置 USE-lite（Universal Sentence Encoder QA on-device）模型（bundled，10~30MB）。
+3. Android：在确认下发任务前：
+   - 拉取 /v1/skills
+   - 拼接 query 文本：instruction + sharedText + sourceApp + locale + deviceState.network
+   - 对 query 与每个 skill.routing_text 做 embedding，相似度匹配选择 top-1 skill
+4. Android：不确定时回退到 IntentRuleEngine（二次意见），映射到 builtin skills：summarize_v1 / extract_v1 / agent_v1 / general_v1。
+
+### 验收
+- 新增/编辑自定义 skill 的 routing_text 后，无需发版，端上能在下次任务创建时路由到该 skill。
+- embedding 置信度不够时不会误路由，会回退到 IntentRuleEngine 选择的 builtin skill。
+
 ## Milestone P4：配置与部署（可选）（1d）
 目标：为未来上云做准备，同时本地开发更顺滑。
 

@@ -42,6 +42,7 @@ def list_skill_infos() -> List[dict]:
                 "name": s.name,
                 "source": s.source,
                 "editable": s.editable,
+                "routing_text": s.routing_text,
                 "system_prompt": s.system_prompt,
                 "user_prompt_template": s.user_prompt_template,
             }

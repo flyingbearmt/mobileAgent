@@ -9,6 +9,7 @@ class Skill:
     name: str
     source: str
     editable: bool
+    routing_text: Optional[str]
     system_prompt: str
     user_prompt_template: Optional[str]
     user_prompt_builder: Callable[[str, Dict[str, Any], Dict[str, Any]], str]

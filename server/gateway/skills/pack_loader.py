@@ -86,6 +86,25 @@ def load_skillpack_dir(
     source = meta.get("source") if isinstance(meta.get("source"), str) else default_source
     editable = meta.get("editable") if isinstance(meta.get("editable"), bool) else default_editable
 
+    routing_text: Optional[str] = None
+    routing = meta.get("routing")
+    if isinstance(routing, dict):
+        desc = routing.get("description") if isinstance(routing.get("description"), str) else None
+        examples = routing.get("examples") if isinstance(routing.get("examples"), list) else None
+        ex_lines = []
+        if examples:
+            for ex in examples:
+                if isinstance(ex, str) and ex.strip():
+                    ex_lines.append(ex.strip())
+
+        parts = []
+        if desc and desc.strip():
+            parts.append(desc.strip())
+        if ex_lines:
+            parts.append("\n".join(ex_lines))
+        if parts:
+            routing_text = "\n\n".join(parts)
+
     system_prompt = _read_text(system_path)
     user_template = _read_text(user_path)
 
@@ -99,6 +118,7 @@ def load_skillpack_dir(
         name=name,
         source=source,
         editable=editable,
+        routing_text=routing_text,
         system_prompt=system_prompt,
         user_prompt_template=user_template,
         user_prompt_builder=builder,

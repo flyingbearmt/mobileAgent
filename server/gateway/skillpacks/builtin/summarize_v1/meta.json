@@ -1,5 +1,13 @@
 {
   "name": "summarize_v1",
   "source": "builtin",
-  "editable": false
+  "editable": false,
+  "routing": {
+    "description": "Summarize the shared text into a short TL;DR.",
+    "examples": [
+      "Summarize this",
+      "Give me a quick summary",
+      "TL;DR"
+    ]
+  }
 }

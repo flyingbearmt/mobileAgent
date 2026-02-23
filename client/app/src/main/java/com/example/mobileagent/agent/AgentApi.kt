@@ -93,6 +93,7 @@ class AgentApi(
                             name = o.optString("name"),
                             source = o.optString("source"),
                             editable = o.optBoolean("editable"),
+                            routingText = o.optString("routing_text").takeIf { it.isNotBlank() },
                             systemPrompt = o.optString("system_prompt"),
                             userPromptTemplate = o.optString("user_prompt_template").takeIf { it.isNotBlank() },
                         )
@@ -124,6 +125,7 @@ class AgentApi(
                 name = o.optString("name"),
                 source = o.optString("source"),
                 editable = o.optBoolean("editable"),
+                routingText = o.optString("routing_text").takeIf { it.isNotBlank() },
                 systemPrompt = o.optString("system_prompt"),
                 userPromptTemplate = o.optString("user_prompt_template").takeIf { it.isNotBlank() },
             )
@@ -151,6 +153,7 @@ class AgentApi(
                 name = o.optString("name"),
                 source = o.optString("source"),
                 editable = o.optBoolean("editable"),
+                routingText = o.optString("routing_text").takeIf { it.isNotBlank() },
                 systemPrompt = o.optString("system_prompt"),
                 userPromptTemplate = o.optString("user_prompt_template").takeIf { it.isNotBlank() },
             )
@@ -187,6 +190,7 @@ data class SkillInfo(
     val name: String,
     val source: String,
     val editable: Boolean,
+    val routingText: String?,
     val systemPrompt: String,
     val userPromptTemplate: String?,
 )

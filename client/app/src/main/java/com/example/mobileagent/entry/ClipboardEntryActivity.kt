@@ -24,6 +24,7 @@ import com.example.mobileagent.AppConfig
 import com.example.mobileagent.agent.AgentApi
 import com.example.mobileagent.context.ContextCollector
 import com.example.mobileagent.intent.IntentRuleEngine
+import com.example.mobileagent.intent.OnDeviceSkillRouter
 import com.example.mobileagent.task.TaskPollWorker
 import com.example.mobileagent.ui.theme.MobileAgentTheme
 import kotlinx.coroutines.launch
@@ -42,13 +43,10 @@ class ClipboardEntryActivity : ComponentActivity() {
         sharedText = intent.getStringExtra(EXTRA_CLIPBOARD_TEXT)
         sourceApp = intent.getStringExtra(EXTRA_SOURCE_APP)
 
+        val router = OnDeviceSkillRouter(this)
+
         setContent {
             val suggestion = IntentRuleEngine.classify(sharedText.orEmpty())
-            val capabilities = when (suggestion) {
-                com.example.mobileagent.intent.IntentType.SUMMARIZE -> mapOf("skill" to "summarize_v1")
-                com.example.mobileagent.intent.IntentType.EXTRACT -> mapOf("skill" to "extract_v1")
-                com.example.mobileagent.intent.IntentType.ASK_AGENT -> mapOf("skill" to "agent_v1")
-            }
             MobileAgentTheme {
                 BottomSheetConfirm(
                     sharedText = sharedText,
@@ -63,8 +61,21 @@ class ClipboardEntryActivity : ComponentActivity() {
                                     sharedText = sharedText,
                                 )
 
-                                val taskId = AgentApi(AppConfig.GATEWAY_BASE_URL)
-                                    .createTask(instruction = instruction, context = ctx, capabilities = capabilities)
+                                val api = AgentApi(AppConfig.GATEWAY_BASE_URL)
+                                val skills = runCatching { api.listSkills() }.getOrNull().orEmpty()
+                                val routed = runCatching {
+                                    router.routeSkill(instruction = instruction, context = ctx, skills = skills)
+                                }.getOrNull()
+                                val skillName = routed?.skillName
+                                    ?: OnDeviceSkillRouter.fallbackSkillFromIntentType(suggestion)
+
+                                val capabilities = mapOf("skill" to skillName)
+
+                                val taskId = api.createTask(
+                                    instruction = instruction,
+                                    context = ctx,
+                                    capabilities = capabilities,
+                                )
 
                                 enqueuePoll(taskId)
                             }.onFailure { err ->

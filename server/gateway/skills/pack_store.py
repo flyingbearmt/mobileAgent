@@ -4,7 +4,7 @@ import json
 import re
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from .base import Skill
 from .pack_loader import _skillpacks_root, load_skillpack_dir
@@ -27,6 +27,8 @@ def upsert_custom_skillpack(
     name: str,
     system_prompt: str,
     user_prompt_template: str,
+    routing_description: Optional[str] = None,
+    routing_examples: Optional[List[str]] = None,
 ) -> Skill:
     _validate_name(name)
 
@@ -35,16 +37,25 @@ def upsert_custom_skillpack(
 
     (d / "system.txt").write_text(system_prompt or "", encoding="utf-8")
     (d / "user.txt").write_text(user_prompt_template or "", encoding="utf-8")
+    meta: dict = {
+        "name": name,
+        "source": "custom",
+        "editable": True,
+    }
+    desc = (routing_description or "").strip() or None
+    exs = []
+    if routing_examples:
+        for ex in routing_examples:
+            if isinstance(ex, str) and ex.strip():
+                exs.append(ex.strip())
+    if desc or exs:
+        meta["routing"] = {
+            "description": desc,
+            "examples": exs,
+        }
+
     (d / "meta.json").write_text(
-        json.dumps(
-            {
-                "name": name,
-                "source": "custom",
-                "editable": True,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
+        json.dumps(meta, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 

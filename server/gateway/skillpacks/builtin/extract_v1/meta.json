@@ -1,5 +1,13 @@
 {
   "name": "extract_v1",
   "source": "builtin",
-  "editable": false
+  "editable": false,
+  "routing": {
+    "description": "Extract actionable items, todos, and safe suggested actions from the shared text.",
+    "examples": [
+      "Extract action items",
+      "Turn this into a todo list",
+      "What are the next steps?"
+    ]
+  }
 }

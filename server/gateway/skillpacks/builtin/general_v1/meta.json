@@ -1,5 +1,13 @@
 {
   "name": "general_v1",
   "source": "builtin",
-  "editable": false
+  "editable": false,
+  "routing": {
+    "description": "General assistant skill for tasks that do not fit other skills. Use as a safe fallback.",
+    "examples": [
+      "Help me with this",
+      "What should I do?",
+      "Answer my question"
+    ]
+  }
 }

@@ -3,7 +3,7 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -47,6 +47,7 @@ class SkillInfo(BaseModel):
     name: str
     source: str
     editable: bool
+    routing_text: Optional[str] = None
     system_prompt: str
     user_prompt_template: Optional[str] = None
 
@@ -55,6 +56,8 @@ class UpsertSkillRequest(BaseModel):
     name: str
     system_prompt: str
     user_prompt_template: str
+    routing_description: Optional[str] = None
+    routing_examples: Optional[List[str]] = None
 
 
 _tasks: Dict[str, Dict[str, Any]] = {}
@@ -217,13 +220,20 @@ async def create_skill(req: UpsertSkillRequest) -> SkillInfo:
     if existing is not None and not existing.editable:
         raise HTTPException(status_code=400, detail="skill is not editable")
     try:
-        skill = upsert_custom_skillpack(req.name, req.system_prompt, req.user_prompt_template)
+        skill = upsert_custom_skillpack(
+            req.name,
+            req.system_prompt,
+            req.user_prompt_template,
+            routing_description=req.routing_description,
+            routing_examples=req.routing_examples,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return SkillInfo(
         name=skill.name,
         source=skill.source,
         editable=skill.editable,
+        routing_text=skill.routing_text,
         system_prompt=skill.system_prompt,
         user_prompt_template=skill.user_prompt_template,
     )
@@ -237,13 +247,20 @@ async def update_skill(name: str, req: UpsertSkillRequest) -> SkillInfo:
     if existing is not None and not existing.editable:
         raise HTTPException(status_code=400, detail="skill is not editable")
     try:
-        skill = upsert_custom_skillpack(req.name, req.system_prompt, req.user_prompt_template)
+        skill = upsert_custom_skillpack(
+            req.name,
+            req.system_prompt,
+            req.user_prompt_template,
+            routing_description=req.routing_description,
+            routing_examples=req.routing_examples,
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return SkillInfo(
         name=skill.name,
         source=skill.source,
         editable=skill.editable,
+        routing_text=skill.routing_text,
         system_prompt=skill.system_prompt,
         user_prompt_template=skill.user_prompt_template,
     )
