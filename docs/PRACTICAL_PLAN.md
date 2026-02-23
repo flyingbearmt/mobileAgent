@@ -77,6 +77,17 @@ Gateway 在 TaskResponse 的 result 中返回：
 
 # Step-by-step Guidance（里程碑）
 
+## 当前进度对照（截至 2026-02-22）
+- P1：已落地（server/gateway/ 已接入 Ollama，返回结构化 JSON；失败有降级）。
+- P2：已落地（Android 已解析 structured JSON 并结构化展示）。
+- P3：已落地（actions 有二次确认 UI，并映射到安全 Intent：DIAL/SEND_SMS/CREATE_CALENDAR_EVENT）。
+- P4：部分落地（baseUrl 有 emulator/real device 分支，但尚未有 Debug 设置页；provider 切换仍主要靠 server env）。
+
+## 现阶段主要缺口（需要先改 plan 再落 code）
+- Android 目前未把“意图分类结果”传给 Gateway（`capabilities` 为空），Gateway 端虽已支持按 `capabilities.skill` 选择 skill，但客户端没有利用。
+- “TODO” 任务类型在客户端仍是通过 instruction 文本引导，并非稳定的 skill/contract。
+- 可靠性：任务与结果目前仅最小化缓存（SharedPreferences 存 result_text），缺少任务列表/重试/取消的持久化闭环。
+
 ## Milestone P0：实用化基线（0.5d）
 目标：明确本阶段的 actions 列表与安全策略。
 - 验收：
@@ -128,6 +139,19 @@ Gateway 在 TaskResponse 的 result 中返回：
 ### 验收
 - actions 点击后能打开对应系统页面，并能完成操作
 
+## Milestone P3.1：意图分类 -> Skill 选择（0.5d）
+目标：让 IntentRuleEngine 的分类结果成为稳定的“执行参数”，而不只是 instruction 文本。
+
+### Steps
+1. Android：在 createTask 时填充 capabilities：
+   - SUMMARIZE -> {"skill":"summarize_v1"}
+   - EXTRACT -> {"skill":"extract_v1"}
+   - ASK_AGENT -> {"skill":"agent_v1"}
+2. Gateway：继续保持默认 skill=general_v1 的兼容逻辑。
+
+### 验收
+- 相同 sharedText 下，不同 suggestion 会触发不同 skill prompt（结果更稳定、更符合预期）。
+
 ## Milestone P4：配置与部署（可选）（1d）
 目标：为未来上云做准备，同时本地开发更顺滑。
 
@@ -151,6 +175,10 @@ Gateway 在 TaskResponse 的 result 中返回：
 
 ## Android 模拟器访问
 - baseUrl 使用 http://10.0.2.2:8001
+
+## Android 真机访问（本地开发）
+- 127.0.0.1 在真机上指向手机自身；本地开发建议使用 adb reverse：
+  - adb reverse tcp:8001 tcp:8001
 
 # 风险与注意事项
 - JSON 结构化输出稳定性：需要 prompt + 校验 + 降级策略

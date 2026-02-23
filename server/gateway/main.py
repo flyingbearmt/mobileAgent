@@ -9,6 +9,8 @@ import httpx
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
+import skills
+
 app = FastAPI(title="MobileAgent Gateway (Ollama)")
 
 
@@ -77,50 +79,13 @@ async def _ollama_generate_structured(instruction: str, context: Dict[str, Any])
     ollama_base_url = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
     model = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
 
-    shared_text = context.get("sharedText")
-    source_app = context.get("sourceApp")
-    locale = context.get("locale")
-
-    schema_hint = {
-        "version": 1,
-        "summary": "string|null",
-        "todos": [{"text": "string", "due_at": "ISO-8601|null"}],
-        "answer": "string|null",
-        "actions": [
-            {
-                "type": "CREATE_CALENDAR_EVENT|SEND_SMS|DIAL",
-                "title": "string?",
-                "start_at": "ISO-8601?",
-                "end_at": "ISO-8601?",
-                "to": "string?",
-                "body": "string?",
-                "number": "string?",
-            }
-        ],
-    }
-
-    system_prompt = (
-        "You are an assistant that produces a single JSON object only. "
-        "Do not include markdown, code fences, or extra text. "
-        "Follow the schema strictly. If you are unsure, set fields to null/empty. "
-        "All actions must be safe suggestions that require user confirmation."
-    )
-
-    user_prompt = (
-        f"Instruction: {instruction}\n"
-        f"SourceApp: {source_app}\n"
-        f"Locale: {locale}\n"
-        f"SharedText: {shared_text}\n\n"
-        f"Output JSON schema (example types): {json.dumps(schema_hint)}"
-    )
+    skill_name = (context.get("capabilities") or {}).get("skill")
+    skill = skills.get_skill(skill_name or "general_v1")
 
     payload = {
         "model": model,
         "stream": False,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
+        "messages": skill.build_messages(instruction=instruction, context=context),
         "options": {
             "temperature": 0.2,
         },
@@ -150,9 +115,11 @@ async def _run_task(task_id: str) -> None:
     task.update({"status": "RUNNING", "stage": "LLM", "progress": 0.2, "updated_at": _now()})
 
     try:
+        ctx = dict(task.get("context") or {})
+        ctx["capabilities"] = task.get("capabilities") or {}
         structured = await _ollama_generate_structured(
             instruction=task.get("instruction", ""),
-            context=task.get("context") or {},
+            context=ctx,
         )
         task.update(
             {

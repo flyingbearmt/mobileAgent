@@ -1,6 +1,6 @@
 ---
 title: MobileAgent Project Plan
-last_updated: 2026-02-16
+last_updated: 2026-02-22
 status: active
 ---
 
@@ -38,16 +38,17 @@ PENDING -> RUNNING -> SUCCEEDED | FAILED | CANCELLED
 POST /v1/tasks
 
 Request:
+- client_task_id: string | null (可选，用于客户端幂等/追踪)
 - instruction: string
 - context: object (sharedText/sourceApp/timestamp/locale/deviceState...)
-- capabilities: object
+- capabilities: object (可选扩展点；v1 用于传递 skill/provider 等)
 
 Response:
 - task_id: string
 - status: PENDING|RUNNING|...
 - stage: string
 - progress: number(0..1)
-- result: { type: "text", text: string } | null
+- result: { type: "text"|"json", text: string } | null
 - error: { code: string, message: string } | null
 
 ## 查询任务
@@ -56,6 +57,11 @@ GET /v1/tasks/{task_id}
 Response: 同上
 
 # 代码落地计划（Step-by-step Guidance）
+
+## 当前进度对照（截至 2026-02-22）
+- Milestone 0-4：已在代码中落地（Share/Clipboard 入口、ContextCollector、REST Task ID、WorkManager 轮询、通知 + Result Viewer）。
+- Milestone 6（QS Tile）：已落地为 Clipboard tile（触发 ClipboardEntryActivity）。
+- Milestone 5（可靠性增强）：仅做了最小结果缓存（SharedPreferences 存 result_text），Room 持久化 / Retry / Cancel 仍待实现。
 
 ## Milestone 0：开发环境与运行基线（1-2h）
 - 目标：Android 工程可运行；Mock Gateway 可运行。
@@ -120,8 +126,8 @@ Response: 同上
   - App 重启后任务列表/结果不丢（至少最近 N 条）
 
 ## Milestone 6：Quick Settings Tile（Week 2 / 可选）
-- entry/QSTileService：
-  - 触发打开一个轻量输入/确认界面
+- entry/ClipboardTileService：
+  - 触发打开 ClipboardEntryActivity（复用 Bottom Sheet 确认）
 - 验收：
   - 下拉快捷面板一键触发，能创建任务
 
@@ -130,6 +136,7 @@ Response: 同上
 - 前台应用识别：若要准确需 Usage Stats 权限；MVP 可 best-effort
 - Android 13+ 通知权限：需处理 POST_NOTIFICATIONS
 - 网络：模拟器使用 10.0.2.2 访问本机
+- 真机本地开发：127.0.0.1 指向手机自身，需配合 adb reverse 把手机端口反向映射到电脑
 
 # 版本管理与迭代方式
 
