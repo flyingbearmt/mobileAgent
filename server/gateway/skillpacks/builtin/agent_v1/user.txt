@@ -1,0 +1,8 @@
+Task: Answer the user's instruction using the shared text as context. Put your final response in answer. You may also provide a short summary.
+
+Instruction: {instruction}
+SourceApp: {source_app}
+Locale: {locale}
+SharedText: {shared_text}
+
+Output JSON schema (example types): {schema_hint}

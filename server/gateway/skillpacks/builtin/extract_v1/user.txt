@@ -1,0 +1,8 @@
+Task: Extract actionable items. Prefer filling todos and safe actions when the user intent is clear. If unsure, leave fields null/empty.
+
+Instruction: {instruction}
+SourceApp: {source_app}
+Locale: {locale}
+SharedText: {shared_text}
+
+Output JSON schema (example types): {schema_hint}

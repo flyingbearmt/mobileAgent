@@ -164,6 +164,23 @@ Gateway 在 TaskResponse 的 result 中返回：
 ### 验收
 - 真机与不同环境切换无需改代码
 
+## Milestone P5：Skills 管理（1d）
+目标：在 Gateway/Android 提供可视化 Skills 列表与增删改（仅自定义 skills），用于快速迭代 prompts。
+
+### Steps
+1. Gateway：新增 skills 管理 API：
+   - GET /v1/skills：列出已注册 skills（包含 builtin/custom 标识）
+   - POST /v1/skills：创建自定义 skill（保存并注册）
+   - PUT /v1/skills/{name}：更新自定义 skill
+   - DELETE /v1/skills/{name}：删除自定义 skill
+2. Gateway：builtin skills 只读；自定义 skills 持久化到文件并在启动时加载。
+3. Android：新增 Skills 页面（默认主页），以 tiles 展示 skills，并提供新增/编辑/删除（仅 custom）。
+
+### 验收
+- 打开 App 默认进入 Skills 页面。
+- 能从 Gateway 拉取并展示 skills 列表。
+- 能新增/编辑/删除自定义 skill，并立刻生效（下次 task 可通过 capabilities.skill 使用）。
+
 # 本地开发 Runbook
 
 ## 启动 Ollama（本地）

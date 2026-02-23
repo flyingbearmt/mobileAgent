@@ -131,6 +131,13 @@ Response: 同上
 - 验收：
   - 下拉快捷面板一键触发，能创建任务
 
+## Milestone 7：Skills 管理（可选）
+- Gateway：/v1/skills 列表与自定义 skills 增删改（用于快速迭代 prompts）
+- Android：主页面展示 skills tiles，并支持新增/编辑/删除（仅自定义）
+- 验收：
+  - App 默认进入 Skills 页，能从 Gateway 拉取 skills
+  - 自定义 skills 修改后可用于 createTask 的 capabilities.skill
+
 # 约束与风险清单
 - 剪贴板后台读取限制：MVP 建议走“显式粘贴/显式读取”
 - 前台应用识别：若要准确需 Usage Stats 权限；MVP 可 best-effort

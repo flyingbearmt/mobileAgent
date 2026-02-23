@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 
 @dataclass(frozen=True)
 class Skill:
     name: str
+    source: str
+    editable: bool
     system_prompt: str
+    user_prompt_template: Optional[str]
     user_prompt_builder: Callable[[str, Dict[str, Any], Dict[str, Any]], str]
     schema_hint: Dict[str, Any]
 

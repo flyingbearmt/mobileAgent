@@ -7,17 +7,22 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 
 class AgentApi(
     private val baseUrl: String,
     private val client: OkHttpClient = OkHttpClient(),
 ) {
-    suspend fun createTask(instruction: String, context: Map<String, Any?>): String =
+    suspend fun createTask(
+        instruction: String,
+        context: Map<String, Any?>,
+        capabilities: Map<String, Any?> = emptyMap(),
+    ): String =
         withContext(Dispatchers.IO) {
             val payload = JSONObject()
             payload.put("instruction", instruction)
             payload.put("context", JSONObject(context))
-            payload.put("capabilities", JSONObject())
+            payload.put("capabilities", JSONObject(capabilities))
 
             val req = Request.Builder()
                 .url("$baseUrl/v1/tasks")
@@ -66,6 +71,107 @@ class AgentApi(
             )
         }
     }
+
+    suspend fun listSkills(): List<SkillInfo> = withContext(Dispatchers.IO) {
+        val req = Request.Builder()
+            .url("$baseUrl/v1/skills")
+            .get()
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                throw IllegalStateException("listSkills failed: ${resp.code} $body")
+            }
+            val json = JSONObject(body)
+            val arr = json.optJSONArray("skills") ?: JSONArray()
+            buildList {
+                for (i in 0 until arr.length()) {
+                    val o = arr.optJSONObject(i) ?: continue
+                    add(
+                        SkillInfo(
+                            name = o.optString("name"),
+                            source = o.optString("source"),
+                            editable = o.optBoolean("editable"),
+                            systemPrompt = o.optString("system_prompt"),
+                            userPromptTemplate = o.optString("user_prompt_template").takeIf { it.isNotBlank() },
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    suspend fun upsertSkill(skill: SkillDraft): SkillInfo = withContext(Dispatchers.IO) {
+        val payload = JSONObject()
+        payload.put("name", skill.name)
+        payload.put("system_prompt", skill.systemPrompt)
+        payload.put("user_prompt_template", skill.userPromptTemplate)
+
+        val url = "$baseUrl/v1/skills/${skill.name}"
+        val req = Request.Builder()
+            .url(url)
+            .put(payload.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                throw IllegalStateException("upsertSkill failed: ${resp.code} $body")
+            }
+            val o = JSONObject(body)
+            SkillInfo(
+                name = o.optString("name"),
+                source = o.optString("source"),
+                editable = o.optBoolean("editable"),
+                systemPrompt = o.optString("system_prompt"),
+                userPromptTemplate = o.optString("user_prompt_template").takeIf { it.isNotBlank() },
+            )
+        }
+    }
+
+    suspend fun createSkill(skill: SkillDraft): SkillInfo = withContext(Dispatchers.IO) {
+        val payload = JSONObject()
+        payload.put("name", skill.name)
+        payload.put("system_prompt", skill.systemPrompt)
+        payload.put("user_prompt_template", skill.userPromptTemplate)
+
+        val req = Request.Builder()
+            .url("$baseUrl/v1/skills")
+            .post(payload.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                throw IllegalStateException("createSkill failed: ${resp.code} $body")
+            }
+            val o = JSONObject(body)
+            SkillInfo(
+                name = o.optString("name"),
+                source = o.optString("source"),
+                editable = o.optBoolean("editable"),
+                systemPrompt = o.optString("system_prompt"),
+                userPromptTemplate = o.optString("user_prompt_template").takeIf { it.isNotBlank() },
+            )
+        }
+    }
+
+    suspend fun deleteSkill(name: String): Boolean = withContext(Dispatchers.IO) {
+        val req = Request.Builder()
+            .url("$baseUrl/v1/skills/$name")
+            .delete()
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) {
+                throw IllegalStateException("deleteSkill failed: ${resp.code} $body")
+            }
+            val json = JSONObject(body)
+            json.optBoolean("deleted", false)
+        }
+    }
 }
 
 data class TaskResponse(
@@ -75,4 +181,18 @@ data class TaskResponse(
     val progress: Double,
     val resultText: String?,
     val errorMessage: String?,
+)
+
+data class SkillInfo(
+    val name: String,
+    val source: String,
+    val editable: Boolean,
+    val systemPrompt: String,
+    val userPromptTemplate: String?,
+)
+
+data class SkillDraft(
+    val name: String,
+    val systemPrompt: String,
+    val userPromptTemplate: String,
 )

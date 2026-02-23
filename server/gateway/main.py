@@ -6,10 +6,11 @@ import uuid
 from typing import Any, Dict, Optional
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 import skills
+from skills.pack_store import delete_custom_skillpack, upsert_custom_skillpack
 
 app = FastAPI(title="MobileAgent Gateway (Ollama)")
 
@@ -40,6 +41,20 @@ class TaskResponse(BaseModel):
     error: Optional[TaskError] = None
     created_at: int
     updated_at: int
+
+
+class SkillInfo(BaseModel):
+    name: str
+    source: str
+    editable: bool
+    system_prompt: str
+    user_prompt_template: Optional[str] = None
+
+
+class UpsertSkillRequest(BaseModel):
+    name: str
+    system_prompt: str
+    user_prompt_template: str
 
 
 _tasks: Dict[str, Dict[str, Any]] = {}
@@ -189,3 +204,60 @@ async def get_task(task_id: str) -> TaskResponse:
         )
 
     return TaskResponse(**task)
+
+
+@app.get("/v1/skills")
+async def list_skills() -> Dict[str, Any]:
+    return {"skills": skills.list_skill_infos()}
+
+
+@app.post("/v1/skills")
+async def create_skill(req: UpsertSkillRequest) -> SkillInfo:
+    existing = skills.try_get_skill(req.name)
+    if existing is not None and not existing.editable:
+        raise HTTPException(status_code=400, detail="skill is not editable")
+    try:
+        skill = upsert_custom_skillpack(req.name, req.system_prompt, req.user_prompt_template)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return SkillInfo(
+        name=skill.name,
+        source=skill.source,
+        editable=skill.editable,
+        system_prompt=skill.system_prompt,
+        user_prompt_template=skill.user_prompt_template,
+    )
+
+
+@app.put("/v1/skills/{name}")
+async def update_skill(name: str, req: UpsertSkillRequest) -> SkillInfo:
+    if name != req.name:
+        raise HTTPException(status_code=400, detail="name mismatch")
+    existing = skills.try_get_skill(name)
+    if existing is not None and not existing.editable:
+        raise HTTPException(status_code=400, detail="skill is not editable")
+    try:
+        skill = upsert_custom_skillpack(req.name, req.system_prompt, req.user_prompt_template)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return SkillInfo(
+        name=skill.name,
+        source=skill.source,
+        editable=skill.editable,
+        system_prompt=skill.system_prompt,
+        user_prompt_template=skill.user_prompt_template,
+    )
+
+
+@app.delete("/v1/skills/{name}")
+async def remove_skill(name: str) -> Dict[str, Any]:
+    existing = skills.try_get_skill(name)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="skill not found")
+    if not existing.editable:
+        raise HTTPException(status_code=400, detail="skill is not editable")
+    try:
+        ok = delete_custom_skillpack(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"deleted": ok}

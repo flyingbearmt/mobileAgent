@@ -1,0 +1,6 @@
+Instruction: {instruction}
+SourceApp: {source_app}
+Locale: {locale}
+SharedText: {shared_text}
+
+Output JSON schema (example types): {schema_hint}

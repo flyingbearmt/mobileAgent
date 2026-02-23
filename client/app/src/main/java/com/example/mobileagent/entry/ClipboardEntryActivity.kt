@@ -44,6 +44,11 @@ class ClipboardEntryActivity : ComponentActivity() {
 
         setContent {
             val suggestion = IntentRuleEngine.classify(sharedText.orEmpty())
+            val capabilities = when (suggestion) {
+                com.example.mobileagent.intent.IntentType.SUMMARIZE -> mapOf("skill" to "summarize_v1")
+                com.example.mobileagent.intent.IntentType.EXTRACT -> mapOf("skill" to "extract_v1")
+                com.example.mobileagent.intent.IntentType.ASK_AGENT -> mapOf("skill" to "agent_v1")
+            }
             MobileAgentTheme {
                 BottomSheetConfirm(
                     sharedText = sharedText,
@@ -59,7 +64,7 @@ class ClipboardEntryActivity : ComponentActivity() {
                                 )
 
                                 val taskId = AgentApi(AppConfig.GATEWAY_BASE_URL)
-                                    .createTask(instruction = instruction, context = ctx)
+                                    .createTask(instruction = instruction, context = ctx, capabilities = capabilities)
 
                                 enqueuePoll(taskId)
                             }.onFailure { err ->

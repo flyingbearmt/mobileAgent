@@ -77,7 +77,10 @@ def _agent_user_prompt(instruction: str, context: Dict[str, Any], schema_hint: D
 register_skill(
     Skill(
         name="general_v1",
+        source="builtin",
+        editable=False,
         system_prompt=_BASE_SYSTEM_PROMPT,
+        user_prompt_template=None,
         user_prompt_builder=_base_user_prompt,
         schema_hint=_SCHEMA_HINT,
     )
@@ -86,7 +89,10 @@ register_skill(
 register_skill(
     Skill(
         name="summarize_v1",
+        source="builtin",
+        editable=False,
         system_prompt=_BASE_SYSTEM_PROMPT,
+        user_prompt_template=None,
         user_prompt_builder=_summarize_user_prompt,
         schema_hint=_SCHEMA_HINT,
     )
@@ -95,7 +101,10 @@ register_skill(
 register_skill(
     Skill(
         name="extract_v1",
+        source="builtin",
+        editable=False,
         system_prompt=_BASE_SYSTEM_PROMPT,
+        user_prompt_template=None,
         user_prompt_builder=_extract_user_prompt,
         schema_hint=_SCHEMA_HINT,
     )
@@ -104,7 +113,10 @@ register_skill(
 register_skill(
     Skill(
         name="agent_v1",
+        source="builtin",
+        editable=False,
         system_prompt=_BASE_SYSTEM_PROMPT,
+        user_prompt_template=None,
         user_prompt_builder=_agent_user_prompt,
         schema_hint=_SCHEMA_HINT,
     )

@@ -1,0 +1,8 @@
+Task: Summarize the shared text. Put the summary in summary. Leave todos/actions empty unless explicitly requested by the instruction.
+
+Instruction: {instruction}
+SourceApp: {source_app}
+Locale: {locale}
+SharedText: {shared_text}
+
+Output JSON schema (example types): {schema_hint}
