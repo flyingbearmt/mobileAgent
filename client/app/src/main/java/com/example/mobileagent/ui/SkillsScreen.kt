@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -39,7 +41,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SkillsScreen() {
+fun SkillsScreen(bottomPadding: Dp = 0.dp) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val api = remember { AgentApi(AppConfig.GATEWAY_BASE_URL) }
@@ -92,7 +94,7 @@ fun SkillsScreen() {
             )
         },
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).padding(12.dp)) {
+        Column(modifier = Modifier.padding(top = innerPadding.calculateTopPadding(), bottom = bottomPadding).padding(horizontal = 12.dp)) {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 180.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
