@@ -9,6 +9,13 @@ object AppConfig {
         "http://127.0.0.1:8001"
     }
 
+    val CHAT_BASE_URL: String = if (isEmulator()) {
+        "http://10.0.2.2:8080"
+    } else {
+//        "http://10.0.2.2:8080"
+        "https://hack-26-tablet-ai-agent.ge.onepeloton.com"
+    }
+
     private fun isEmulator(): Boolean {
         val fingerprint = Build.FINGERPRINT
         val model = Build.MODEL

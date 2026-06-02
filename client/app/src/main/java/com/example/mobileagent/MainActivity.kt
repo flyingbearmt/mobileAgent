@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
                             NavigationBarItem(
                                 selected = tab.value == 1,
                                 onClick = { tab.value = 1 },
-                                label = { Text("Skills") },
+                                label = { Text("Tools") },
                                 icon = {},
                             )
                         }
