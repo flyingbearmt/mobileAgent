@@ -41,7 +41,7 @@ fun SkillsScreen(bottomPadding: Dp = 0.dp) {
     fun refresh() {
         scope.launch {
             loading.value = true
-            runCatching { api.getTools("android") }
+            runCatching { api.getTools(AppConfig.PLATFORM) }
                 .onSuccess { tools.value = it }
                 .onFailure { android.util.Log.e("CHATAPI", "getTools failed: ${it.message}") }
             loading.value = false

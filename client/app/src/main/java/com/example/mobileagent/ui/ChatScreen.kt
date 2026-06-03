@@ -50,7 +50,7 @@ private val ISO8601 = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", java.util.Loc
 private val MOCK_CONTEXT_BASE = ClientContext(
     userId = "bd0388aab9774492b1f24d12a8ca9b81",
     authToken = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkU3YTdiRWp6UGhmT1RZTUZTZUkwTSJ9.eyJodHRwOi8vb25lcGVsb3Rvbi5jb20vdXNlcl9pZCI6ImJkMDM4OGFhYjk3NzQ0OTJiMWYyNGQxMmE4Y2E5YjgxIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLm9uZXBlbG90b24uY29tLyIsInN1YiI6ImF1dGgwfGJkMDM4OGFhYjk3NzQ0OTJiMWYyNGQxMmE4Y2E5YjgxIiwiYXVkIjpbImh0dHBzOi8vYXBpLm9uZXBlbG90b24uY29tLyIsImh0dHBzOi8vcGVsb3Rvbi1wcm9kLm9uZXBlbG90b24uYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTc4MDQzNjAzMywiZXhwIjoxNzgwNjA4ODMzLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIHBlbG90b24tYXBpLm1lbWJlcnM6ZGVmYXVsdCBvZmZsaW5lX2FjY2VzcyIsImF6cCI6IldWb0p4VkRkUG9GeDRSTmV3dnZnNmNoMm1aN2J3bnNNIn0.kFhScKn00md6wmdRtEv8hAivcYNT7s-tyxyvK7bbNGsf6QByvJbK9k2UGtFe9PynokFbsG1KAWg952eC1F1N5csGdEJADAd_tPAvN-fXeFvKT9bZzPKYORHHZO-GnOUbowUR12wC1WnUaPV_FH9SNkfgI3Eqb7LRVRX-0r2gNcA3-BiE-0eUFhnWjkOvZ1lXbJIuqMSkwENME_V3kKkPd5SOYsFOZINHAGZtwr1VwRj6Fl-_VFh2M8rxkAegj-YfZq0M1Q-S9tWk-rjTuFTEFc0uxp69HG4uIuODZ_82KQJsN3xadBcbdNjVIXHBr76Zz4gcCJ2_FMLa1T94AZr63g",
-    platform = "tablet",
+    platform = AppConfig.PLATFORM,
     locale = "en_US",
     timezone = TimeZone.getDefault().id,
 )
@@ -77,7 +77,7 @@ fun ChatScreen(bottomPadding: Dp = 0.dp) {
 
     LaunchedEffect(Unit) {
         serverOnline.value = runCatching { api.health() }.getOrDefault(false)
-        runCatching { api.getTools("tablet") }
+        runCatching { api.getTools(AppConfig.PLATFORM) }
             .onSuccess { tools.value = it }
             .onFailure { Log.e("CHATAPI", "getTools failed: ${it.message}") }
     }

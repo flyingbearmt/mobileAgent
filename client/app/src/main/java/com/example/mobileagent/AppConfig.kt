@@ -3,6 +3,10 @@ package com.example.mobileagent
 import android.os.Build
 
 object AppConfig {
+
+    // options: tablet, android, ios
+    const val PLATFORM = "android"
+
     val GATEWAY_BASE_URL: String = if (isEmulator()) {
         "http://10.0.2.2:8001"
     } else {
