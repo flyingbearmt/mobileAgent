@@ -16,6 +16,17 @@ import java.util.concurrent.TimeUnit
 
 data class ToolInfo(val name: String, val description: String)
 
+data class ClientContext(
+    val userId: String,
+    val authToken: String,
+    val platform: String = "tablet",
+    val locale: String = "en_US",
+    val timezone: String = "UTC",
+    val currentTime: String = "",
+)
+
+data class ChatMessage(val role: String, val content: String)
+
 class ChatApi(
     private val baseUrl: String,
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -27,12 +38,13 @@ class ChatApi(
         client.newCall(req).execute().use { it.isSuccessful }
     }
 
-    suspend fun getTools(platform: String = "android"): List<ToolInfo> = withContext(Dispatchers.IO) {
+    suspend fun getTools(platform: String = "tablet"): List<ToolInfo> = withContext(Dispatchers.IO) {
         val req = Request.Builder().url("${baseUrl}/tools?platform=$platform").get().build()
         Log.d("CHATAPI", "getTools: $req")
         client.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) return@withContext emptyList()
-            val arr = JSONObject(resp.body?.string().orEmpty()).optJSONArray("tools") ?: return@withContext emptyList()
+            val arr = JSONObject(resp.body?.string().orEmpty()).optJSONArray("tools")
+                ?: return@withContext emptyList()
             buildList {
                 for (i in 0 until arr.length()) {
                     val o = arr.optJSONObject(i) ?: continue
@@ -42,27 +54,21 @@ class ChatApi(
         }
     }
 
-    fun streamMessage(messages: List<ChatMessage>, toolNames: List<String> = emptyList()): Flow<String> = flow {
-        val payload = JSONObject().apply {
-            put("messages", JSONArray().apply {
-                messages.forEach { msg ->
-                    put(JSONObject().apply {
-                        put("role", msg.role)
-                        put("content", msg.content)
-                    })
-                }
-            })
-            if (toolNames.isNotEmpty()) {
-                put("tool_names", JSONArray(toolNames))
-            }
-        }
+    fun streamMessage(
+        messages: List<ChatMessage>,
+        toolNames: List<String> = emptyList(),
+        context: ClientContext? = null,
+    ): Flow<String> = flow {
+        val payload = buildPayload(messages.map { msg ->
+            JSONObject().apply { put("role", msg.role); put("content", msg.content) }
+        }, toolNames, context)
 
         val req = Request.Builder()
             .url("${baseUrl}/agent/stream")
             .post(payload.toString().toRequestBody("application/json".toMediaType()))
             .build()
 
-        Log.d("CHATAPI", "stream req: $req body: $payload")
+        Log.d("CHATAPI", "stream req: $req")
 
         client.newCall(req).execute().use { resp ->
             if (!resp.isSuccessful) {
@@ -73,24 +79,39 @@ class ChatApi(
             while (!source.exhausted()) {
                 val line = source.readUtf8Line() ?: break
                 if (!line.startsWith("data: ")) continue
-                val data = line.removePrefix("data: ").trim()
-                if (data == "[DONE]") break
-                val json = runCatching { JSONObject(data) }.getOrNull() ?: continue
+                val json = runCatching { JSONObject(line.removePrefix("data: ").trim()) }.getOrNull() ?: continue
                 when (json.optString("type")) {
                     "done" -> break
-                    "delta" -> {
-                        val text = json.optString("text")
-                        if (text.isNotEmpty()) emit(text)
-                    }
+                    "delta" -> json.optString("text").takeIf { it.isNotEmpty() }?.let { emit(it) }
                     "tool_use" -> {
                         val name = json.optString("tool_name")
                         val input = json.optJSONObject("tool_input")?.toString() ?: "{}"
+                        Log.d("TOOL", "$name → $input")
                         emit("\n[tool: $name $input]\n")
                     }
                 }
             }
         }
     }.flowOn(Dispatchers.IO)
-}
 
-data class ChatMessage(val role: String, val content: String)
+    private fun buildPayload(
+        apiMessages: List<JSONObject>,
+        toolNames: List<String>,
+        context: ClientContext?,
+    ): JSONObject = JSONObject().apply {
+        val arr = JSONArray()
+        apiMessages.forEach { arr.put(it) }
+        put("messages", arr)
+        if (toolNames.isNotEmpty()) put("tool_names", JSONArray(toolNames))
+        if (context != null) {
+            put("client_context", JSONObject().apply {
+                put("user_id", context.userId)
+                put("auth_token", context.authToken)
+                put("platform", context.platform)
+                put("locale", context.locale)
+                put("timezone", context.timezone)
+                if (context.currentTime.isNotEmpty()) put("current_time", context.currentTime)
+            })
+        }
+    }
+}
