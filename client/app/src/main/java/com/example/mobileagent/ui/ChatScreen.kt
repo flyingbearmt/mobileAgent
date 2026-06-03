@@ -32,10 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import com.example.mobileagent.AppConfig
 import com.example.mobileagent.agent.ChatApi
 import com.example.mobileagent.agent.ChatMessage
 import com.example.mobileagent.agent.ClientContext
+import com.example.mobileagent.agent.ToolExecutor
 import com.example.mobileagent.agent.ToolInfo
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
@@ -62,7 +64,9 @@ private fun mockContext() = MOCK_CONTEXT_BASE.copy(
 @Composable
 fun ChatScreen(bottomPadding: Dp = 0.dp) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     val api = remember { ChatApi(AppConfig.CHAT_BASE_URL) }
+    val toolExecutor = remember { ToolExecutor(context) }
 
     val messages = remember { mutableStateListOf<ChatMessage>() }
     val input = remember { mutableStateOf("") }
@@ -91,13 +95,14 @@ fun ChatScreen(bottomPadding: Dp = 0.dp) {
         scope.launch {
             loading.value = true
             try {
-                val context = messages.subList(0, assistantIndex)
+                val history = messages.subList(0, assistantIndex)
                     .filter { it.content.isNotBlank() }
                     .takeLast(4)
                 api.streamMessage(
-                    messages = context,
+                    messages = history,
                     toolNames = tools.value.map { it.name },
                     context = mockContext(),
+                    toolExecutor = toolExecutor::execute,
                 )
                     .catch { err -> messages[assistantIndex] = ChatMessage(role = "assistant", content = "Error: ${err.message}") }
                     .collect { token ->

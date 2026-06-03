@@ -58,6 +58,7 @@ class ChatApi(
         messages: List<ChatMessage>,
         toolNames: List<String> = emptyList(),
         context: ClientContext? = null,
+        toolExecutor: (suspend (name: String, input: JSONObject) -> String)? = null,
     ): Flow<String> = flow {
         val payload = buildPayload(messages.map { msg ->
             JSONObject().apply { put("role", msg.role); put("content", msg.content) }
@@ -85,9 +86,14 @@ class ChatApi(
                     "delta" -> json.optString("text").takeIf { it.isNotEmpty() }?.let { emit(it) }
                     "tool_use" -> {
                         val name = json.optString("tool_name")
-                        val input = json.optJSONObject("tool_input")?.toString() ?: "{}"
+                        val input = json.optJSONObject("tool_input") ?: JSONObject()
                         Log.d("TOOL", "$name → $input")
-                        emit("\n[tool: $name $input]\n")
+                        if (toolExecutor != null) {
+                            val result = runCatching { toolExecutor(name, input) }.getOrElse { "error: ${it.message}" }
+                            emit("\n[tool: $name → $result]\n")
+                        } else {
+                            emit("\n[tool: $name ${input}]\n")
+                        }
                     }
                 }
             }
